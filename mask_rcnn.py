@@ -108,7 +108,7 @@ class MaskRCNN(Detector):
             detections.append(instances)
         return detections
 
-    def detect(self, images, to_cpu=True):
+    def __call__(self, images, to_cpu=True):
         with torch.no_grad():
             images_processed = self.preprocess(images)
             outputs = self.inference(images_processed)

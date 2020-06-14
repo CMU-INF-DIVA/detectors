@@ -16,9 +16,12 @@ class Detector(object):
         if torch.cuda.is_available() and gpu_id is not None:
             self.device = 'cuda:%d' % (gpu_id)
 
-    def detect(self, images: List[torch.Tensor],
-               to_cpu=True) -> List[Detection]:
-        # images: list of float tensors as H x W x C in [0, 256)
+    def __call__(self, images: List[torch.Tensor],
+                 to_cpu: bool = True) -> List[Detection]:
+        '''
+        images: a list of pytorch float tensors as H x W x C[BGR] in [0, 256)
+        to_cpu: whether to move detections to cpu
+        '''
         raise NotImplementedError
 
     def __repr__(self):
