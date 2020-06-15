@@ -7,12 +7,12 @@ from detectron2 import model_zoo
 from detectron2.config import get_cfg
 from detectron2.data import MetadataCatalog
 from detectron2.engine import DefaultPredictor
-from detectron2.layers import batched_nms
 from detectron2.modeling.poolers import ROIPooler
 from detectron2.modeling.postprocessing import detector_postprocess
-from detectron2.structures import Boxes, ImageList, Instances
+from detectron2.structures import Boxes, ImageList
+from torchvision.ops.boxes import nms
 
-from .base import Detector, Detection, ObjectType
+from .base import Detection, Detector, ObjectType
 
 TYPE_MAPPING = {
     'person': ObjectType.Person, 'car': ObjectType.Vehicle,
@@ -31,18 +31,18 @@ DEFAULT_MODEL = 'res101'
 
 class MaskRCNN(Detector):
 
-    def __init__(self, gpu_id=None, model=DEFAULT_MODEL, score_thres=0.5,
-                 nms_threshold=None):
+    def __init__(self, gpu_id=None, model=DEFAULT_MODEL,
+                 score_threshold=0.5, interclass_nms_threshold=None):
         super(MaskRCNN, self).__init__(gpu_id)
         cfg_file = CFG_FILES[model]
         cfg = get_cfg()
         cfg.merge_from_file(model_zoo.get_config_file(cfg_file))
-        cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = score_thres
+        cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = score_threshold
         cfg.MODEL.WEIGHTS = model_zoo.get_checkpoint_url(cfg_file)
         cfg.MODEL.DEVICE = self.device
         self.model_meta = MetadataCatalog.get(cfg.DATASETS.TRAIN[0])
         self.cfg = cfg
-        self.nms_threshold = nms_threshold
+        self.interclass_nms_threshold = interclass_nms_threshold
         self.predictor = DefaultPredictor(cfg)
 
     def preprocess(self, images):
@@ -61,8 +61,9 @@ class MaskRCNN(Detector):
                 target_width = self.cfg.INPUT.MAX_SIZE_TEST
                 target_height = int(round(target_width / origin_ratio))
             target_shape = (target_height, target_width)
-            image = F.interpolate(image.unsqueeze(0), target_shape,
-                                  mode='bilinear', align_corners=False)
+            image = F.interpolate(
+                image.unsqueeze(0), target_shape, 
+                mode='bilinear', align_corners=False)
             image = (image.squeeze(0) - self.predictor.model.pixel_mean) / \
                 self.predictor.model.pixel_std
             processed_images.append(image)
@@ -88,24 +89,28 @@ class MaskRCNN(Detector):
         for instances, image in zip(outputs, images):
             height, width = image.shape[:2]
             instances = detector_postprocess(instances, height, width)
-            type_valid = [
+            keep = [
                 self.model_meta.thing_classes[pred_class] in TYPE_MAPPING
                 for pred_class in instances.pred_classes]
-            instances = instances[type_valid]
-            instances.pred_classes = torch.as_tensor([
+            instances = instances[keep]
+            object_types = torch.as_tensor([
                 TYPE_MAPPING[self.model_meta.thing_classes[pred_class]]
-                for pred_class in instances.pred_classes])
-            if self.nms_threshold is not None and len(instances) > 0:
-                keep_indices = batched_nms(
-                    instances.pred_boxes.tensor, instances.scores,
-                    instances.pred_classes, self.nms_threshold)
-                instances = instances[keep_indices]
+                for pred_class in instances.pred_classes],
+                device=instances.pred_classes.device)
             features = instances.roi_features.mean(dim=(2, 3))
             features = features / features.norm(dim=1, keepdim=True)
-            instances.roi_features = features
+            detection = Detection(
+                instances.image_size, object_types=object_types,
+                image_boxes=instances.pred_boxes,
+                detection_scores=instances.scores,
+                image_masks=instances.pred_masks, image_features=features)
+            if self.interclass_nms_threshold is not None and len(detection) > 0:
+                keep = nms(detection.image_boxes, detection.detection_scores,
+                           self.interclass_nms_threshold)
+                detection = detection[keep]
             if to_cpu:
-                instances = instances.to('cpu')
-            detections.append(instances)
+                detection = detection.to('cpu')
+            detections.append(detection)
         return detections
 
     def __call__(self, images, to_cpu=True):

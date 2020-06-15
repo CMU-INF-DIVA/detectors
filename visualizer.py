@@ -37,16 +37,16 @@ class Visualizer(object):
     def _draw_detection(self, visualizer, detection, image_rgb):
         labels, colors, masks = [], [], []
         for obj_i in range(len(detection)):
-            obj_type = ObjectType(detection.pred_classes[obj_i].item())
+            obj_type = ObjectType(detection.object_types[obj_i].item())
             obj_id = obj_i
             obj_type = obj_type.name
-            score = detection.scores[obj_i] * 100
+            score = detection.detection_scores[obj_i] * 100
             label = '%s-%s %.0f%%' % (obj_type, obj_id, score)
             labels.append(label)
             mask = [np.array([0, 0])]
-            if detection.has('pred_masks'):
-                mask = detection.pred_masks[obj_i].numpy()
+            if detection.has('image_masks'):
+                mask = detection.image_masks[obj_i].numpy()
             masks.append(mask)
         visualizer.overlay_instances(
-            masks=masks, boxes=detection.pred_boxes, labels=labels)
+            masks=masks, boxes=detection.image_boxes, labels=labels)
         return colors
