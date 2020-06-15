@@ -1,3 +1,5 @@
+import os
+import os.path as osp
 import torch
 import torch.nn.functional as F
 from detectron2.layers import batched_nms
@@ -7,6 +9,9 @@ from .base import Detection, Detector, ObjectType
 
 MODEL_LIST = ['yolov5s', 'yolov5m', 'yolov5l', 'yolov5x']
 DEFAULT_MODEL = 'yolov5x'
+
+INPUT_SHAPES = [416, 640, 1280, 1920]
+DEFAULT_SHAPE = 640
 
 TYPE_MAPPING = {
     0: ObjectType.Person, 2: ObjectType.Vehicle,
@@ -18,18 +23,24 @@ TYPE_MAPPING = {
 class YoloV5(Detector):
 
     def __init__(self, gpu_id=None, model=DEFAULT_MODEL,
+                 input_shape=DEFAULT_SHAPE,
                  score_threshold=0.4, nms_threshold=0.5,
                  interclass_nms_threshold=None):
+        assert input_shape in INPUT_SHAPES, \
+            'Invalid input shape %d' % (input_shape)
         super(YoloV5, self).__init__(gpu_id)
+        cwd = os.getcwd()
+        os.chdir(osp.join(osp.dirname(__file__), 'weights/yolov5'))
         model = torch.hub.load(
             'ultralytics/yolov5', model, pretrained=True)
+        os.chdir(cwd)
         self.model = model.to(self.device).eval()
         self.selected_classes = torch.as_tensor(
             [*TYPE_MAPPING.keys()], dtype=torch.long, device=self.device)
         self.score_threshold = score_threshold
         self.nms_threshold = nms_threshold
         self.interclass_nms_threshold = interclass_nms_threshold
-        self.model_input_shape = (416, 416)
+        self.model_input_shape = (input_shape, input_shape)
 
     def preprocess(self, images):
         processed_images = []
@@ -53,7 +64,7 @@ class YoloV5(Detector):
 
     def inference(self, image_tensor):
         outputs = self.model(image_tensor)
-        return outputs
+        return outputs[0]
 
     def postprocess(self, outputs, images, to_cpu):
         detections = []

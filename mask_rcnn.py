@@ -1,3 +1,4 @@
+import os
 import os.path as osp
 
 import numpy as np
@@ -32,18 +33,25 @@ DEFAULT_MODEL = 'res101'
 class MaskRCNN(Detector):
 
     def __init__(self, gpu_id=None, model=DEFAULT_MODEL,
-                 score_threshold=0.5, interclass_nms_threshold=None):
+                 input_shape=(1333, 800), score_threshold=0.5,
+                 interclass_nms_threshold=None):
         super(MaskRCNN, self).__init__(gpu_id)
         cfg_file = CFG_FILES[model]
         cfg = get_cfg()
         cfg.merge_from_file(model_zoo.get_config_file(cfg_file))
         cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = score_threshold
+        cfg.INPUT.MAX_SIZE_TEST = max(input_shape)
+        cfg.INPUT.MIN_SIZE_TEST = min(input_shape)
         cfg.MODEL.WEIGHTS = model_zoo.get_checkpoint_url(cfg_file)
         cfg.MODEL.DEVICE = self.device
         self.model_meta = MetadataCatalog.get(cfg.DATASETS.TRAIN[0])
         self.cfg = cfg
         self.interclass_nms_threshold = interclass_nms_threshold
+        cache_dir = os.environ.get('FVCORE_CACHE', '')
+        os.environ['FVCORE_CACHE'] = osp.join(
+            osp.dirname(__file__), 'weights/fvcore')
         self.predictor = DefaultPredictor(cfg)
+        os.environ['FVCORE_CACHE'] = cache_dir
 
     def preprocess(self, images):
         processed_images = []
@@ -62,7 +70,7 @@ class MaskRCNN(Detector):
                 target_height = int(round(target_width / origin_ratio))
             target_shape = (target_height, target_width)
             image = F.interpolate(
-                image.unsqueeze(0), target_shape, 
+                image.unsqueeze(0), target_shape,
                 mode='bilinear', align_corners=False)
             image = (image.squeeze(0) - self.predictor.model.pixel_mean) / \
                 self.predictor.model.pixel_std
