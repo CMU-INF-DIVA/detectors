@@ -33,7 +33,7 @@ DEFAULT_MODEL = 'res101'
 class MaskRCNN(Detector):
 
     def __init__(self, gpu_id=None, model=DEFAULT_MODEL,
-                 input_shape=(1333, 800), score_threshold=0.5,
+                 input_shape=(1920, 1080), score_threshold=0.5,
                  interclass_nms_threshold=None):
         super(MaskRCNN, self).__init__(gpu_id)
         cfg_file = CFG_FILES[model]

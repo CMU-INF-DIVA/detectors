@@ -20,7 +20,7 @@ TYPE_MAPPING = {
 }
 
 
-class YoloV5(Detector):
+class YOLOv5(Detector):
 
     def __init__(self, gpu_id=None, model=DEFAULT_MODEL,
                  input_shape=DEFAULT_SHAPE,
@@ -28,7 +28,7 @@ class YoloV5(Detector):
                  interclass_nms_threshold=None):
         assert input_shape in INPUT_SHAPES, \
             'Invalid input shape %d' % (input_shape)
-        super(YoloV5, self).__init__(gpu_id)
+        super(YOLOv5, self).__init__(gpu_id)
         cwd = os.getcwd()
         os.chdir(osp.join(osp.dirname(__file__), 'weights/yolov5'))
         model = torch.hub.load(
