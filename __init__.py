@@ -8,6 +8,9 @@ def get(name):
     elif name == 'YOLOv5':
         from .yolo_v5 import YOLOv5
         model = YOLOv5
+    elif name == 'Efficient Det':
+        from .efficient_det import EfficientDet
+        model = EfficientDet
     else:
         raise NotImplementedError('%s model not found' % (name))
     return model

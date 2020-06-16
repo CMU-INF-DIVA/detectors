@@ -25,6 +25,16 @@ def load_images(dirname=osp.dirname(__file__)):
     return images
 
 
+def draw_once(model, images):
+    visualizer = Visualizer()
+    detections = []
+    for image in images:
+        detection = model([image])[0]
+        visualizer.draw(image, detection)
+        detections.append(detection)
+    return detections
+
+
 def draw_grid(name, backbones, input_shapes, images, set_shape):
     visualizer = Visualizer()
     n_row = len(backbones) * len(images)
@@ -38,9 +48,9 @@ def draw_grid(name, backbones, input_shapes, images, set_shape):
         model = detectors.get(name)(0, backbone, input_shapes[0])
         for i2, input_shape in enumerate(input_shapes):
             set_shape(model, input_shape)
-            for i3, img in enumerate(images.values()):
-                detection = model([img])[0]
-                visual_image = visualizer.draw(img, detection, show=False)
+            for i3, image in enumerate(images.values()):
+                detection = model([image])[0]
+                visual_image = visualizer.draw(image, detection, show=False)
                 ax = axes[i1 * len(images) + i3, i2]
                 ax.imshow(visual_image)
                 ax.set_title('%s %s' % (backbone, input_shape))

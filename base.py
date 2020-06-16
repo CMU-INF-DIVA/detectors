@@ -2,6 +2,7 @@ from enum import IntEnum
 from typing import List, Union
 
 import torch
+from torch.backends import cudnn
 from detectron2.structures import Instances
 
 Detection = Instances
@@ -19,6 +20,8 @@ class Detector(object):
         self.device = 'cpu'
         if torch.cuda.is_available() and gpu_id is not None:
             self.device = 'cuda:%d' % (gpu_id)
+            cudnn.fastest = True
+            cudnn.benchmark = True
 
     def __call__(self, images: List[torch.Tensor],
                  to_cpu: bool = True) -> List[Detection]:
