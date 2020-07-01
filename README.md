@@ -1,5 +1,9 @@
 # Detectors
 
+Author: Lijun Yu
+
+Email: lijun@lj-y.com
+
 Object detection model zoo.
 
 ## Model Zoo
