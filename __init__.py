@@ -1,7 +1,7 @@
 __author__ = 'Lijun Yu'
 
 
-def get(name):
+def get_detector(name):
     if name == 'Mask R-CNN':
         from .mask_rcnn import MaskRCNN
         return MaskRCNN
