@@ -7,12 +7,10 @@ import torch.nn.functional as F
 from detectron2.checkpoint import DetectionCheckpointer
 from detectron2.config import get_cfg
 from detectron2.data import MetadataCatalog
-from detectron2.data.transforms import ResizeShortestEdge
 from detectron2.model_zoo import get_checkpoint_url, get_config_file
 from detectron2.modeling import build_model
-from detectron2.modeling.poolers import ROIPooler
 from detectron2.modeling.postprocessing import detector_postprocess
-from detectron2.structures import Boxes, ImageList
+from detectron2.structures import ImageList
 from torchvision.ops.boxes import nms
 
 from .base import Detection, Detector, ObjectType
@@ -113,7 +111,7 @@ class MaskRCNN(Detector):
                 device=instances.pred_classes.device)
             detection = Detection(
                 instances.image_size, object_types=object_types,
-                image_boxes=instances.pred_boxes,
+                image_boxes=instances.pred_boxes.tensor,
                 detection_scores=instances.scores,
                 image_masks=instances.pred_masks)
             if self.output_feature:  # TODO

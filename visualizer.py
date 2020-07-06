@@ -24,10 +24,10 @@ class Visualizer(object):
         visual_image = output.get_image()
         plt.close(output.fig)
         if show:
-            self._plt_imshow(visual_image, **show_args)
+            self.plt_imshow(visual_image, **show_args)
         return visual_image
 
-    def _plt_imshow(self, image, figsize=(16, 9), dpi=120, axis='off'):
+    def plt_imshow(self, image, figsize=(16, 9), dpi=120, axis='off'):
         fig = plt.figure(figsize=figsize, dpi=dpi)
         plt.axis(axis)
         plt.imshow(image)
