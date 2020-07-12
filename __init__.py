@@ -1,5 +1,7 @@
 __author__ = 'Lijun Yu'
 
+from .base import ObjectType
+
 
 def get_detector(name):
     if name == 'Mask R-CNN':
