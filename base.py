@@ -1,4 +1,4 @@
-from enum import IntEnum
+from enum import IntEnum, auto
 from typing import List, Union
 
 import torch
@@ -11,8 +11,12 @@ Detection attributes: object_types, image_boxes, detection_scores, \
     [image_features, image_masks]
 '''
 
-ObjectType = IntEnum('ObjectType', ['Vehicle', 'Person', 'Bike'],
-                     module=__name__)
+
+class ObjectType(IntEnum):
+
+    Vehicle = auto()
+    Person = auto()
+    Bike = auto()
 
 
 class Detector(object):
