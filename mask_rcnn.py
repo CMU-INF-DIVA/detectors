@@ -88,11 +88,11 @@ class MaskRCNN(Detector):
         features = self.model.backbone(images.tensor)
         proposals, _ = self.model.proposal_generator(images, features, None)
         outputs, _ = self.model.roi_heads(images, features, proposals, None)
-        if self.output_feature:  # TODO
+        if self.output_feature:
             for i, instances in enumerate(outputs):
                 feature = [features[key][i: i + 1]
                            for key in self.model.roi_heads.in_features]
-                instances.roi_features = self.model.roi_heads.mask_pooler(
+                instances.roi_features = self.model.roi_heads.box_roi_pool(
                     feature, [instances.pred_boxes])
         return outputs
 
@@ -114,7 +114,7 @@ class MaskRCNN(Detector):
                 image_boxes=instances.pred_boxes.tensor,
                 detection_scores=instances.scores,
                 image_masks=instances.pred_masks)
-            if self.output_feature:  # TODO
+            if self.output_feature:
                 features = instances.roi_features.mean(dim=(2, 3))
                 features = features / features.norm(dim=1, keepdim=True)
                 detection.image_features = features
