@@ -92,7 +92,7 @@ class MaskRCNN(Detector):
             for i, instances in enumerate(outputs):
                 feature = [features[key][i: i + 1]
                            for key in self.model.roi_heads.in_features]
-                instances.roi_features = self.model.roi_heads.box_roi_pool(
+                instances.roi_features = self.model.roi_heads.box_pooler(
                     feature, [instances.pred_boxes])
         return outputs
 

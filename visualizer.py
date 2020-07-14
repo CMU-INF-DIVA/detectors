@@ -3,7 +3,6 @@ import numpy as np
 import torch
 from detectron2.utils.visualizer import Visualizer as dt_visualizer
 from matplotlib import pyplot as plt
-from matplotlib.patches import Circle, FancyArrow, Polygon, Rectangle
 
 from .base import Detection, ObjectType
 
@@ -38,8 +37,10 @@ class Visualizer(object):
         labels, colors, masks = [], [], []
         for obj_i in range(len(detection)):
             obj_type = ObjectType(detection.object_types[obj_i].item())
-            obj_id = obj_i
             obj_type = obj_type.name
+            obj_id = obj_i
+            if detection.has('track_ids'):
+                obj_id = detection.track_ids[obj_i].item()
             score = detection.detection_scores[obj_i] * 100
             label = '%s-%s %.0f%%' % (obj_type, obj_id, score)
             labels.append(label)
