@@ -15,3 +15,7 @@ Object detection model zoo.
 ## Dependency
 
 See [actev_base](https://github.com/CMU-INF-DIVA/actev_base).
+
+## License
+
+See [License](LICENSE).
