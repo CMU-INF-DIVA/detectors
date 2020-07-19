@@ -17,10 +17,13 @@ A submodule of object detection models.
 ```python
 import torch
 from detectors import get_detector
+
 detector_class = get_detector('Mask R-CNN')  # Or YOLOv5, EfficientDet
 detector = detector_class(gpu_id=0)
+
 # images: a list of pytorch tensors as H x W x C[BGR] in [0, 256)
 images = [torch.zeros(1080, 1920, 3)]
+
 detections = detector(images)
 for detection in detections:
   # Detection attributes: object_types, image_boxes, detection_scores
