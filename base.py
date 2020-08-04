@@ -31,7 +31,7 @@ class Detector(object):
     def __call__(self, images: List[torch.Tensor],
                  to_cpu: bool = True) -> List[Detection]:
         '''
-        images: a list of pytorch tensors as H x W x C[BGR] in [0, 256)
+        images: a list of pytorch tensors as H x W x C[BGR] in [0, 256) on cpu
         to_cpu: whether to move detections to cpu
         '''
         raise NotImplementedError
