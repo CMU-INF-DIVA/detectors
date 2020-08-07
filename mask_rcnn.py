@@ -1,5 +1,7 @@
 import os
 import os.path as osp
+import warnings
+warnings.simplefilter("ignore", UserWarning)
 
 import numpy as np
 import torch
