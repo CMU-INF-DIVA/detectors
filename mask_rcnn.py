@@ -38,6 +38,7 @@ class MaskRCNN(Detector):
     def __init__(self, gpu_id=None,
                  model='res101',
                  input_shape=(1920, 1080),
+                 output_mask=False,
                  output_feature=False,
                  score_threshold=0.5,
                  interclass_nms_threshold=None):
@@ -48,6 +49,7 @@ class MaskRCNN(Detector):
         cfg.merge_from_file(get_config_file(cfg_file))
         cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = score_threshold
         cfg.MODEL.DEVICE = self.device
+        cfg.MODEL.MASK_ON = output_mask
         model = build_model(cfg)
         with FvcoreCachePath():
             DetectionCheckpointer(model).load(get_checkpoint_url(cfg_file))
@@ -58,6 +60,7 @@ class MaskRCNN(Detector):
         self.model_meta = MetadataCatalog.get(cfg.DATASETS.TRAIN[0])
         input_shape = sorted(input_shape, reverse=True)
         self.input_shape = input_shape + [input_shape[0] / input_shape[1]]
+        self.output_mask = output_mask
         self.output_feature = output_feature
         self.interclass_nms_threshold = interclass_nms_threshold
 
@@ -114,8 +117,9 @@ class MaskRCNN(Detector):
             detection = Detection(
                 instances.image_size, object_types=object_types,
                 image_boxes=instances.pred_boxes.tensor,
-                detection_scores=instances.scores,
-                image_masks=instances.pred_masks)
+                detection_scores=instances.scores)
+            if self.output_mask:
+                detection.image_masks = instances.pred_masks
             if self.output_feature:
                 features = instances.roi_features.mean(dim=(2, 3))
                 features = features / features.norm(dim=1, keepdim=True)
