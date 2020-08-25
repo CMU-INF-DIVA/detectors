@@ -9,9 +9,9 @@ from .color import ColorManager
 
 class Visualizer(object):
 
-    def __init__(self):
+    def __init__(self, object_types=ObjectType):
         self.color_manager = ColorManager()
-        self.object_types = ObjectType
+        self.object_types = object_types
 
     def draw(self, image: torch.Tensor, detection: Detection,
              show: bool = True, **show_args):
@@ -40,8 +40,8 @@ class Visualizer(object):
     def _draw_detection(self, visualizer, detection, image_rgb):
         labels, colors, masks = [], [], []
         for obj_i in range(len(detection)):
-            obj_type = ObjectType(detection.object_types[obj_i].item())
-            obj_type = obj_type.name
+            obj_type = self.object_types(
+                detection.object_types[obj_i].item()).name
             obj_id = obj_i
             if detection.has('track_ids'):
                 obj_id = detection.track_ids[obj_i].item()
