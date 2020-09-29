@@ -1,9 +1,5 @@
-import os
-import os.path as osp
 import warnings
-warnings.simplefilter("ignore", UserWarning)
 
-import numpy as np
 import torch
 import torch.nn.functional as F
 from detectron2.checkpoint import DetectionCheckpointer
@@ -17,8 +13,6 @@ from torchvision.ops.boxes import nms
 
 from .base import Detection, Detector, ObjectType
 from .utils import FvcoreCachePath
-
-DEFAULT_MODEL = 'res101'
 
 
 class MaskRCNN(Detector):
@@ -134,7 +128,8 @@ class MaskRCNN(Detector):
         return detections
 
     def __call__(self, images, to_cpu=True):
-        with torch.no_grad():
+        with torch.no_grad() and warnings.catch_warnings():
+            warnings.simplefilter("ignore", UserWarning)
             processed_images = self.preprocess(images)
             outputs = self.inference(processed_images)
             detections = self.postprocess(outputs, images, to_cpu)
