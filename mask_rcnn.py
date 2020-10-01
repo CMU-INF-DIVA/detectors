@@ -5,6 +5,7 @@ import torch.nn.functional as F
 from detectron2.checkpoint import DetectionCheckpointer
 from detectron2.config import get_cfg
 from detectron2.data import MetadataCatalog
+from detectron2.layers import batched_nms
 from detectron2.model_zoo import get_checkpoint_url, get_config_file
 from detectron2.modeling import build_model
 from detectron2.modeling.postprocessing import detector_postprocess
@@ -26,7 +27,7 @@ class MaskRCNN(Detector):
     TYPE_MAPPING = {
         'person': ObjectType.Person, 'car': ObjectType.Vehicle,
         'bus': ObjectType.Vehicle, 'truck': ObjectType.Vehicle,
-        'motorcycle': ObjectType.Vehicle, 'bicycle': ObjectType.Bike
+        'motorcycle': ObjectType.Vehicle, 'bicycle': ObjectType.Bike,
     }
 
     def __init__(self, gpu_id=None,
@@ -35,6 +36,7 @@ class MaskRCNN(Detector):
                  output_mask=False,
                  output_feature=False,
                  score_threshold=0.5,
+                 nms_threshold=0.5,
                  interclass_nms_threshold=None):
         assert model in self.CFG_FILES, 'Unsupported model %s' % (model)
         super(MaskRCNN, self).__init__(gpu_id)
@@ -56,6 +58,7 @@ class MaskRCNN(Detector):
         self.input_shape = input_shape + [input_shape[0] / input_shape[1]]
         self.output_mask = output_mask
         self.output_feature = output_feature
+        self.nms_threshold = nms_threshold
         self.interclass_nms_threshold = interclass_nms_threshold
 
     def preprocess(self, images):
@@ -118,6 +121,10 @@ class MaskRCNN(Detector):
                 features = instances.roi_features.mean(dim=(2, 3))
                 features = features / features.norm(dim=1, keepdim=True)
                 detection.image_features = features
+            keep = batched_nms(
+                detection.image_boxes, detection.detection_scores, 
+                detection.object_types, self.nms_threshold)
+            detection = detection[keep]
             if self.interclass_nms_threshold is not None and len(detection) > 0:
                 keep = nms(detection.image_boxes, detection.detection_scores,
                            self.interclass_nms_threshold)
