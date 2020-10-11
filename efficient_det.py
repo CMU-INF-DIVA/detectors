@@ -1,9 +1,4 @@
-import os
-import os.path as osp
-import sys
-
 import torch
-import torch.nn.functional as F
 from detectron2.layers import batched_nms
 from fvcore.common.file_io import PathManager
 from torchvision.ops import boxes as box_ops

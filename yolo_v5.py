@@ -2,7 +2,6 @@ import os
 import os.path as osp
 
 import torch
-import torch.nn.functional as F
 from detectron2.layers import batched_nms
 from torchvision.ops import boxes as box_ops
 

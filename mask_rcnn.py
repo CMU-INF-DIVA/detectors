@@ -9,7 +9,7 @@ from detectron2.layers import batched_nms
 from detectron2.model_zoo import get_checkpoint_url, get_config_file
 from detectron2.modeling import build_model
 from detectron2.modeling.postprocessing import detector_postprocess
-from detectron2.structures import ImageList
+from detectron2.structures import ImageList, Boxes
 from torchvision.ops.boxes import nms
 
 from .base import Detection, Detector, ObjectType
@@ -35,6 +35,8 @@ class MaskRCNN(Detector):
                  input_shape=(1920, 1080),
                  output_mask=False,
                  output_feature=False,
+                 output_global_feature=False,
+                 output_raw_types=False,
                  score_threshold=0.5,
                  nms_threshold=0.5,
                  interclass_nms_threshold=None):
@@ -58,6 +60,8 @@ class MaskRCNN(Detector):
         self.input_shape = input_shape + [input_shape[0] / input_shape[1]]
         self.output_mask = output_mask
         self.output_feature = output_feature
+        self.output_global_feature = output_global_feature
+        self.output_raw_types = output_raw_types
         self.nms_threshold = nms_threshold
         self.interclass_nms_threshold = interclass_nms_threshold
 
@@ -96,21 +100,33 @@ class MaskRCNN(Detector):
                            for key in self.model.roi_heads.in_features]
                 instances.roi_features = self.model.roi_heads.box_pooler(
                     feature, [instances.pred_boxes])
+        if self.output_global_feature:
+            for i, instances in enumerate(outputs):
+                feature = [features[key][i: i + 1]
+                           for key in self.model.roi_heads.in_features]
+                global_box = Boxes(torch.as_tensor(
+                    [[0, 0, *self.input_shape[:2]]], device=feature[0].device))
+                instances._global_feature = self.model.roi_heads.box_pooler(
+                    feature, [global_box])
         return outputs
 
     def postprocess(self, outputs, images, to_cpu):
         detections = []
-        for instances, image in zip(outputs, images):
+        for raw_instances, image in zip(outputs, images):
             height, width = image.shape[:2]
-            instances = detector_postprocess(instances, height, width)
-            keep = [
-                self.model_meta.thing_classes[pred_class] in self.TYPE_MAPPING
-                for pred_class in instances.pred_classes]
-            instances = instances[keep]
-            object_types = torch.as_tensor([
-                self.TYPE_MAPPING[self.model_meta.thing_classes[pred_class]]
-                for pred_class in instances.pred_classes],
-                device=instances.pred_classes.device)
+            instances = detector_postprocess(raw_instances, height, width)
+            if not self.output_raw_types:
+                keep = [
+                    self.model_meta.thing_classes[
+                        pred_class] in self.TYPE_MAPPING
+                    for pred_class in instances.pred_classes]
+                instances = instances[keep]
+                object_types = torch.as_tensor([
+                    self.TYPE_MAPPING[self.model_meta.thing_classes[pred_class]]
+                    for pred_class in instances.pred_classes],
+                    device=instances.pred_classes.device)
+            else:
+                object_types = instances.pred_classes
             detection = Detection(
                 instances.image_size, object_types=object_types,
                 image_boxes=instances.pred_boxes.tensor,
@@ -121,16 +137,21 @@ class MaskRCNN(Detector):
                 features = instances.roi_features.mean(dim=(2, 3))
                 features = features / features.norm(dim=1, keepdim=True)
                 detection.image_features = features
-            keep = batched_nms(
-                detection.image_boxes, detection.detection_scores, 
-                detection.object_types, self.nms_threshold)
-            detection = detection[keep]
+            if not self.output_raw_types:
+                keep = batched_nms(
+                    detection.image_boxes, detection.detection_scores,
+                    detection.object_types, self.nms_threshold)
+                detection = detection[keep]
             if self.interclass_nms_threshold is not None and len(detection) > 0:
                 keep = nms(detection.image_boxes, detection.detection_scores,
                            self.interclass_nms_threshold)
                 detection = detection[keep]
             if to_cpu:
                 detection = detection.to('cpu')
+            if self.output_global_feature:
+                detection._global_feature = raw_instances._global_feature
+                if to_cpu:
+                    detection._global_feature = detection._global_feature.cpu()
             detections.append(detection)
         return detections
 
