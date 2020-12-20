@@ -42,16 +42,21 @@ class Visualizer(object):
         for obj_i in range(len(detection)):
             obj_type = self.object_types(
                 detection.object_types[obj_i].item()).name
-            obj_id = obj_i
-            if detection.has('track_ids'):
-                obj_id = detection.track_ids[obj_i].item()
             score = detection.detection_scores[obj_i] * 100
-            label = '%s-%s %.0f%%' % (obj_type, obj_id, score)
-            labels.append(label)
+            obj_id = obj_i
             x0, y0 = detection.image_boxes[obj_i, :2].type(torch.int)
             x1, y1 = detection.image_boxes[obj_i, 2:].ceil().type(torch.int)
             roi = image_rgb[y0:y1, x0:x1]
-            color = self.color_manager.get_color((obj_type, obj_id), roi)
+            if detection.has('track_ids'):
+                obj_id = detection.track_ids[obj_i].item()
+                label = '%s-%s %.0f%%' % (obj_type, obj_id, score)
+                color = self.color_manager.get_color((obj_type, obj_id), roi)
+            else:
+                label = '%s %.0f%%' % (obj_type, score)
+                color = self.color_manager.get_color(obj_type, roi)
+            if detection.has('custom_labels'):
+                label = '%s %s' % (label, detection.custom_labels[obj_i])
+            labels.append(label)
             colors.append(color)
             mask = [np.array([0, 0])]
             if detection.has('image_masks'):
