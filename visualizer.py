@@ -1,6 +1,9 @@
+from typing import Union
+
 import numpy as np
 import torch
-from detectron2.utils.visualizer import Visualizer as dt_visualizer, GenericMask
+from detectron2.utils.visualizer import GenericMask
+from detectron2.utils.visualizer import Visualizer as dt_visualizer
 from matplotlib import pyplot as plt
 
 from .base import Detection, ObjectType
@@ -13,18 +16,22 @@ class Visualizer(object):
         self.color_manager = ColorManager()
         self.object_types = object_types
 
-    def draw(self, image: torch.Tensor, detection: Detection,
-             show: bool = True, **show_args):
+    def draw(self, image: Union[torch.Tensor, np.array], detection: Detection,
+             image_id: str = None, *, show: bool = True, **show_args):
         '''
-        image: a pytorch float tenor as H x W x C[BGR] in [0, 256)
+        image: a pytorch float tensor as H x W x C[BGR] in [0, 256) or
+            a numpy uint8 array as H x W x C[RGB]
         detection: output from Detector
 
         return: a numpy uint8 array as H x W x C[RGB]
         '''
-        image_rgb = image.numpy()[:, :, ::-1]
-        visualizer = dt_visualizer(image_rgb)
+        if isinstance(image, torch.Tensor):
+            image = image.numpy()[:, :, ::-1]
+        visualizer = dt_visualizer(image)
         detection = detection.to('cpu')
         self._draw_detection(visualizer, detection)
+        if image_id is not None:
+            visualizer.draw_text(image_id, (0, 0), horizontal_alignment='left')
         output = visualizer.get_output()
         visual_image = output.get_image()
         plt.close(output.fig)
@@ -41,30 +48,35 @@ class Visualizer(object):
 
     def _draw_detection(self, visualizer, detection):
         height, width = visualizer.img.shape[:2]
-        diagonal = np.sqrt(height * width)
         edges = detection.image_boxes[:, 2:] - detection.image_boxes[:, :2]
         areas = edges[:, 0] * edges[:, 1]
         indices = areas.argsort(descending=True)
+        if detection.has('colors'):
+            use_existing_color = True
+        else:
+            use_existing_color = False
+            detection.colors = torch.empty((len(detection), 3))
         for idx in indices:
             obj_type = self.object_types(
                 detection.object_types[idx].item()).name
             score = detection.detection_scores[idx] * 100
             bbox = detection.image_boxes[idx]
-            x0, y0 = bbox[:2].type(torch.int)
-            x1, y1 = bbox[2:].ceil().type(torch.int)
-            roi = visualizer.img[y0:y1, x0:x1]
             if detection.has('track_ids'):
                 obj_id = detection.track_ids[idx].item()
                 label = '%s-%s %.0f%%' % (obj_type, obj_id, score)
-                color = self.color_manager.get_color((obj_type, obj_id), roi)
             else:
+                obj_id = None
                 label = '%s %.0f%%' % (obj_type, score)
-                color = self.color_manager.get_color(obj_type, roi)
             if detection.has('custom_labels'):
                 label += detection.custom_labels[idx]
+            if use_existing_color:
+                color = detection.colors[idx].numpy()
+            else:
+                color = self.color_manager.get_color(
+                    (obj_type, obj_id), visualizer.img, bbox.type(torch.int))
+                detection.colors[idx] = torch.as_tensor(color)
             visualizer.draw_box(bbox, edge_color=color)
-            self._draw_label(
-                visualizer, bbox, label, (y1 - y0) / diagonal, color)
+            self._draw_label(visualizer, bbox, label, color)
             if detection.has('image_masks'):
                 mask = detection.image_masks[idx].numpy()
                 mask = GenericMask(mask, height, width)
@@ -76,13 +88,14 @@ class Visualizer(object):
                 keypoints[:, 0, 2] = 1
 
     @staticmethod
-    def _draw_label(visualizer, bbox, text, size_ratio, color):
-        x0, y0, x1, _ = bbox
+    def _draw_label(visualizer, bbox, text, color):
+        x0, y0, x1, y1 = bbox
         linewidth = max(
             visualizer._default_font_size / 4, 1) * visualizer.output.scale
         position = (x0 + x1) / 2, y0 - linewidth
+        size_ratio = (y1 - y0) / visualizer.output.height
         font_size = visualizer._default_font_size * np.clip(
-            0.4 + size_ratio * 6, 0.5, 1) * visualizer.output.scale
+            0.4 + size_ratio * 5, 0.5, 1) * visualizer.output.scale
         box_color = (0, 0, 0) if sum(color) > 1.5 else (1, 1, 1)
         visualizer.output.ax.text(
             *position, text, size=font_size, family='sans-serif',

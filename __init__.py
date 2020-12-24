@@ -1,6 +1,8 @@
 __author__ = 'Lijun Yu'
 
 from .base import ObjectType
+from .color import ColorManager
+from .visualizer import Visualizer
 
 
 def get_detector(name):
