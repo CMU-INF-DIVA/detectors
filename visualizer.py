@@ -51,10 +51,10 @@ class Visualizer(object):
         edges = detection.image_boxes[:, 2:] - detection.image_boxes[:, :2]
         areas = edges[:, 0] * edges[:, 1]
         indices = areas.argsort(descending=True)
+        use_existing_color = False
         if detection.has('colors'):
             use_existing_color = True
-        else:
-            use_existing_color = False
+        elif detection.has('track_ids'):
             detection.colors = torch.empty((len(detection), 3))
         for idx in indices:
             obj_type = self.object_types(
@@ -72,9 +72,12 @@ class Visualizer(object):
             if use_existing_color:
                 color = detection.colors[idx].numpy()
             else:
-                color = self.color_manager.get_color(
-                    (obj_type, obj_id), visualizer.img, bbox.type(torch.int))
-                detection.colors[idx] = torch.as_tensor(color)
+                if detection.has('track_ids'):
+                    color = self.color_manager.get_color(
+                        obj_id, visualizer.img, bbox.type(torch.int))
+                    detection.colors[idx] = torch.as_tensor(color)
+                else:
+                    color = self.color_manager.get_color(obj_type)
             visualizer.draw_box(bbox, edge_color=color)
             self._draw_label(visualizer, bbox, label, color)
             if detection.has('image_masks'):
