@@ -99,7 +99,7 @@ class Visualizer(object):
         size_ratio = (y1 - y0) / visualizer.output.height
         font_size = visualizer._default_font_size * np.clip(
             0.4 + size_ratio * 5, 0.5, 1) * visualizer.output.scale
-        box_color = (0, 0, 0) if sum(color) > 1.5 else (1, 1, 1)
+        box_color = (0, 0, 0) if sum(color) > 1 else (1, 1, 1)
         visualizer.output.ax.text(
             *position, text, size=font_size, family='sans-serif',
             bbox={'facecolor': box_color, 'pad': 0.7,
