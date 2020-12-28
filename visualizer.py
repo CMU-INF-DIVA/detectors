@@ -68,7 +68,7 @@ class Visualizer(object):
                 obj_id = None
                 label = '%s %.0f%%' % (obj_type, score)
             if detection.has('custom_labels'):
-                label += detection.custom_labels[idx]
+                label = detection.custom_labels[idx]
             if use_existing_color:
                 color = detection.colors[idx].numpy()
             else:
@@ -79,7 +79,8 @@ class Visualizer(object):
                 else:
                     color = self.color_manager.get_color(obj_type)
             visualizer.draw_box(bbox, edge_color=color)
-            self._draw_label(visualizer, bbox, label, color)
+            if label is not None:
+                self._draw_label(visualizer, bbox, label, color)
             if detection.has('image_masks'):
                 mask = detection.image_masks[idx].numpy()
                 mask = GenericMask(mask, height, width)
