@@ -19,65 +19,66 @@ class Visualizer(object):
     def draw(self, image: Union[torch.Tensor, np.array], detection: Detection,
              image_id: str = None, *, show: bool = True, **show_args):
         '''
-        image: a pytorch float tensor as H x W x C[BGR] in [0, 256) or
+        image: a pytorch float tensor as H x W x C[BGR] in [0, 256), or
             a numpy uint8 array as H x W x C[RGB]
-        detection: output from Detector
+        detection: Detection from Detector
+        image_id: str
 
         return: a numpy uint8 array as H x W x C[RGB]
         '''
         if isinstance(image, torch.Tensor):
-            image = image.numpy()[:, :, ::-1]
+            image = image.numpy()[..., ::-1]
         visualizer = dt_visualizer(image)
         detection = detection.to('cpu')
+        if not detection.has('colors') and detection.has('track_ids'):
+            colors = self.color_manager.assign_colors(
+                image, detection.track_ids.numpy(), 
+                detection.image_boxes.numpy())
+            detection.colors = torch.as_tensor(colors)
         self._draw_detection(visualizer, detection)
         if image_id is not None:
             visualizer.draw_text(image_id, (0, 0), horizontal_alignment='left')
-        output = visualizer.get_output()
-        visual_image = output.get_image()
-        plt.close(output.fig)
+        visual_image = self.get_image(visualizer)
         if show:
             self.plt_imshow(visual_image, **show_args)
         return visual_image
 
-    def plt_imshow(self, image, figsize=(16, 9), dpi=120, axis='off'):
+    @staticmethod
+    def plt_imshow(image, figsize=(16, 9), dpi=120, axis='off'):
         fig = plt.figure(figsize=figsize, dpi=dpi)
         plt.axis(axis)
         plt.imshow(image)
         plt.show()
         plt.close(fig)
 
+    @staticmethod
+    def get_image(visualizer):
+        output = visualizer.get_output()
+        visual_image = output.get_image()
+        plt.close(output.fig)
+        return visual_image
+
     def _draw_detection(self, visualizer, detection):
         height, width = visualizer.img.shape[:2]
         edges = detection.image_boxes[:, 2:] - detection.image_boxes[:, :2]
         areas = edges[:, 0] * edges[:, 1]
         indices = areas.argsort(descending=True)
-        use_existing_color = False
-        if detection.has('colors'):
-            use_existing_color = True
-        elif detection.has('track_ids'):
-            detection.colors = torch.empty((len(detection), 3))
         for idx in indices:
             obj_type = self.object_types(
                 detection.object_types[idx].item()).name
             score = detection.detection_scores[idx] * 100
             bbox = detection.image_boxes[idx]
-            if detection.has('track_ids'):
+            if detection.has('colors'):
+                color = detection.colors[idx].numpy()
+            else:
+                color = self.color_manager.get_color(obj_type)
+            if detection.has('custom_labels'):
+                label = detection.custom_labels[idx]
+            elif detection.has('track_ids'):
                 obj_id = detection.track_ids[idx].item()
                 label = '%s-%s %.0f%%' % (obj_type, obj_id, score)
             else:
-                obj_id = None
                 label = '%s %.0f%%' % (obj_type, score)
-            if detection.has('custom_labels'):
-                label = detection.custom_labels[idx]
-            if use_existing_color:
-                color = detection.colors[idx].numpy()
-            else:
-                if detection.has('track_ids'):
-                    color = self.color_manager.get_color(
-                        obj_id, visualizer.img, bbox.type(torch.int))
-                    detection.colors[idx] = torch.as_tensor(color)
-                else:
-                    color = self.color_manager.get_color(obj_type)
             visualizer.draw_box(bbox, edge_color=color)
             if label is not None:
                 self._draw_label(visualizer, bbox, label, color)

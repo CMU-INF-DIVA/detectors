@@ -11,7 +11,7 @@ from tqdm.autonotebook import tqdm
 
 sys.path.insert(0, '../..')
 
-import detectors  # noqa
+from detectors import get_detector  # noqa
 from detectors.visualizer import Visualizer  # noqa
 
 
@@ -52,7 +52,7 @@ def draw_grid(name, params, images, n_col=4):
     fig.set_tight_layout(0.01)
     ax_i = 0
     for param in tqdm(all_params):
-        model = detectors.get(name)(0, **param)
+        model = get_detector(name)(0, **param)
         for image_name, image in images.items():
             detection = model([image])[0]
             visual_image = visualizer.draw(image, detection, show=False)

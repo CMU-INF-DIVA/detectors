@@ -43,16 +43,26 @@ class ColorManager(object):
         self.color_index_scores = np.zeros(PALETTE_RGB.shape[0])
         self.color_map = {}
 
-    def get_color(self, object_id, image=None, bbox=None):
-        if object_id not in self.color_map:
-            if image is not None and bbox is not None:
-                x0, y0, x1, y1 = bbox
-                mean_color = image[y0:y1, x0:x1].mean(axis=(0, 1)) / 256
-                color_scores = (np.square(PALETTE_RGB - mean_color) *
+    def get_color(self, key, contrast_color=None):
+        if key not in self.color_map:
+            if contrast_color is not None:
+                color_scores = (np.square(PALETTE_RGB - contrast_color) *
                                 COLOR_DIFF_WEIGHT).sum(axis=1)
                 color_id = (color_scores + self.color_index_scores).argmax()
             else:
                 color_id = self.color_index_scores.argmax()
-            self.color_map[object_id] = PALETTE_RGB[color_id]
+            self.color_map[key] = PALETTE_RGB[color_id]
             self.color_index_scores[color_id] -= 1
-        return self.color_map[object_id]
+        return self.color_map[key]
+
+    def assign_colors(self, image_rgb, object_ids, image_boxes):
+        assert len(object_ids) == len(image_boxes)
+        colors = np.empty((len(object_ids), 3))
+        object_ids = object_ids.astype(np.int)
+        image_boxes = image_boxes.astype(np.int)
+        for idx, (obj_id, bbox) in enumerate(zip(object_ids, image_boxes)):
+            x0, y0, x1, y1 = bbox
+            # Maybe better to use the most occured color than mean color
+            mean_color = image_rgb[y0:y1, x0:x1].mean(axis=(0, 1)) / 256
+            colors[idx] = self.get_color(obj_id, mean_color)
+        return colors

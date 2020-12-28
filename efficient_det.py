@@ -60,7 +60,7 @@ class EfficientDet(Detector):
         processed_images = []
         for image in images:
             image = image.to(device=self.device, non_blocking=True)
-            image = image.permute(2, 0, 1).type(torch.float) / 255.0
+            image = image.flip(-1).permute(2, 0, 1).type(torch.float) / 255.0
             image = (image - self.mean) / self.std
             image = resize_with_padding(image, self.model_input_shape)
             processed_images.append(image)
