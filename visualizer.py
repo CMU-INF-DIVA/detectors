@@ -1,5 +1,6 @@
 from typing import Union
 
+import matplotlib as mpl
 import numpy as np
 import torch
 from detectron2.utils.visualizer import GenericMask
@@ -32,7 +33,7 @@ class Visualizer(object):
         detection = detection.to('cpu')
         if not detection.has('colors') and detection.has('track_ids'):
             colors = self.color_manager.assign_colors(
-                image, detection.track_ids.numpy(), 
+                image, detection.track_ids.numpy(),
                 detection.image_boxes.numpy())
             detection.colors = torch.as_tensor(colors)
         self._draw_detection(visualizer, detection)
@@ -88,9 +89,8 @@ class Visualizer(object):
                 for segment in mask.polygons:
                     visualizer.draw_polygon(segment.reshape(-1, 2), color)
             if detection.has('image_locations'):
-                keypoints = np.empty((len(detection), 1, 3))
-                keypoints[:, 0, :2] = detection.image_locations
-                keypoints[:, 0, 2] = 1
+                location = detection.image_locations[idx]
+                self._draw_shape(visualizer, location, 2)
 
     @staticmethod
     def _draw_label(visualizer, bbox, text, color):
@@ -108,3 +108,16 @@ class Visualizer(object):
                   'edgecolor': 'none', 'alpha': 0.7},
             verticalalignment='bottom', horizontalalignment='center',
             color=color, zorder=10)
+
+    @staticmethod
+    def _draw_shape(visualizer, location, size, color='red',
+                    num_edge=None, fill=True):
+        if num_edge is not None:
+            patch = mpl.patches.CirclePolygon(
+                location, size, num_edge, color=color, fill=fill)
+        elif num_edge == 4:
+            patch = mpl.patches.Rectangle(
+                location, 2 * size, 2 * size, color=color, fill=fill)
+        else:
+            patch = mpl.patches.Circle(location, size, color=color, fill=fill)
+        visualizer.output.ax.add_patch(patch)
