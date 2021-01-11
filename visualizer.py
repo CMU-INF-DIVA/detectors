@@ -111,13 +111,14 @@ class Visualizer(object):
 
     @staticmethod
     def _draw_shape(visualizer, location, size, color='red',
-                    num_edge=None, fill=True):
-        if num_edge is not None:
-            patch = mpl.patches.CirclePolygon(
-                location, size, num_edge, color=color, fill=fill)
-        elif num_edge == 4:
+                    num_edge=None, fill=True, **kwargs):
+        if num_edge == 4:
             patch = mpl.patches.Rectangle(
-                location, 2 * size, 2 * size, color=color, fill=fill)
+                location, 2 * size, 2 * size, color=color, fill=fill, **kwargs)
+        elif num_edge is not None:
+            patch = mpl.patches.CirclePolygon(
+                location, size, num_edge, color=color, fill=fill, **kwargs)
         else:
-            patch = mpl.patches.Circle(location, size, color=color, fill=fill)
+            patch = mpl.patches.Circle(
+                location, size, color=color, fill=fill, **kwargs)
         visualizer.output.ax.add_patch(patch)
