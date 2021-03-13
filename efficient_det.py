@@ -1,6 +1,6 @@
 import torch
 from detectron2.layers import batched_nms
-from fvcore.common.file_io import PathManager
+from iopath.common.file_io import PathManager
 from torchvision.ops import boxes as box_ops
 
 from .base import Detection, Detector, ObjectType
