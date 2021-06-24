@@ -1,3 +1,4 @@
+import logging
 import os
 import os.path as osp
 import sys
@@ -31,6 +32,21 @@ class SysPath(object):
 
     def __exit__(self, type, value, traceback):
         sys.path.pop(0)
+
+
+class MuteLogger(object):
+
+    def __init__(self, name, level=logging.ERROR):
+        self.name = name
+        self.level = level
+
+    def __enter__(self):
+        self.logger = logging.getLogger(self.name)
+        self.orig_level = self.logger.level
+        self.logger.setLevel(self.level)
+
+    def __exit__(self, type, value, traceback):
+        self.logger.setLevel(self.orig_level)
 
 
 def resize_with_padding(image, target_shape):

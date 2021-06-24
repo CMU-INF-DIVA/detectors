@@ -9,11 +9,11 @@ from detectron2.layers import batched_nms
 from detectron2.model_zoo import get_checkpoint_url, get_config_file
 from detectron2.modeling import build_model
 from detectron2.modeling.postprocessing import detector_postprocess
-from detectron2.structures import ImageList, Boxes
+from detectron2.structures import Boxes, ImageList
 from torchvision.ops.boxes import nms
 
 from .base import Detection, Detector, ObjectType
-from .utils import FvcoreCachePath
+from .utils import FvcoreCachePath, MuteLogger
 
 
 class MaskRCNN(Detector):
@@ -49,7 +49,7 @@ class MaskRCNN(Detector):
         cfg.MODEL.DEVICE = self.device
         cfg.MODEL.MASK_ON = output_mask
         model = build_model(cfg)
-        with FvcoreCachePath():
+        with FvcoreCachePath(), MuteLogger('fvcore.common.checkpoint'):
             DetectionCheckpointer(model).load(get_checkpoint_url(cfg_file))
         model.requires_grad_(False)
         model.eval()
