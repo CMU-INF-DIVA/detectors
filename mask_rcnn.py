@@ -33,6 +33,7 @@ class MaskRCNN(Detector):
     def __init__(self, gpu_id=None,
                  model='res101',
                  input_shape=(1920, 1080),
+                 custom_type_mapping=None,
                  output_mask=False,
                  output_feature=False,
                  output_global_feature=False,
@@ -58,6 +59,13 @@ class MaskRCNN(Detector):
         self.model_meta = MetadataCatalog.get(cfg.DATASETS.TRAIN[0])
         input_shape = sorted(input_shape, reverse=True)
         self.input_shape = input_shape + [input_shape[0] / input_shape[1]]
+        if custom_type_mapping is not None:
+            custom_type_mapping = {
+                k: ObjectType[v] for k, v in custom_type_mapping.items()}
+            self.type_mapping = self.TYPE_MAPPING.copy()
+            self.type_mapping.update(custom_type_mapping)
+        else:
+            self.type_mapping = self.TYPE_MAPPING
         self.output_mask = output_mask
         self.output_feature = output_feature
         self.output_global_feature = output_global_feature
@@ -118,11 +126,11 @@ class MaskRCNN(Detector):
             if not self.output_raw_types:
                 keep = [
                     self.model_meta.thing_classes[
-                        pred_class] in self.TYPE_MAPPING
+                        pred_class] in self.type_mapping
                     for pred_class in instances.pred_classes]
                 instances = instances[keep]
                 object_types = torch.as_tensor([
-                    self.TYPE_MAPPING[self.model_meta.thing_classes[pred_class]]
+                    self.type_mapping[self.model_meta.thing_classes[pred_class]]
                     for pred_class in instances.pred_classes],
                     device=instances.pred_classes.device)
             else:

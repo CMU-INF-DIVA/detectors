@@ -17,6 +17,7 @@ class ObjectType(IntEnum):
     Vehicle = auto()
     Person = auto()
     Bike = auto()
+    TrafficLight = auto()
 
 
 class COCOObjectType(IntEnum):
