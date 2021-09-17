@@ -17,7 +17,7 @@ class Visualizer(object):
         self.color_manager = ColorManager()
         self.object_types = object_types
 
-    def draw(self, image: Union[torch.Tensor, np.array], detection: Detection,
+    def draw(self, image: Union[torch.Tensor, np.ndarray], detection: Detection,
              image_id: str = None, *, show: bool = True, **show_args):
         '''
         image: a pytorch float tensor as H x W x C[BGR] in [0, 256), or
