@@ -97,7 +97,7 @@ class Visualizer(object):
         x0, y0, x1, y1 = bbox
         linewidth = max(
             visualizer._default_font_size / 4, 1) * visualizer.output.scale
-        position = (x0 + x1) / 2, y0 - linewidth
+        position = (x0 + x1) / 2, max(linewidth, y0 - linewidth)
         size_ratio = (y1 - y0) / visualizer.output.height
         font_size = visualizer._default_font_size * np.clip(
             0.4 + size_ratio * 5, 0.5, 1) * visualizer.output.scale
