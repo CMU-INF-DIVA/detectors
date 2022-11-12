@@ -1,19 +1,21 @@
-COLLABORATORS LICENSE
+MIT License
 
-The collaborators in this repository (these collaborators) are the authors 
-explicitly stated in each module or source file.
-These collaborators are the authors of all the code contained in this 
-repository (this code) and reserve all the rights, unless stated otherwise.
-Any action on this code beyond these collaborators must have the consent from 
-all of these collaborators.
-No one has the right to use this code under any circumstances without written 
-permission from one of these collaborators.
-All of these collaborators claims no less than equal contribution with the 
-first author on any research or commercial outcome based on or related to this 
-code, unless negotiated otherwise.
+Copyright (c) 2022 Lijun Yu
 
-Amendment #1: 
-Members of CMU-INF-DIVA (https://github.com/CMU-INF-DIVA) organization are 
-permitted to use this code in any repositories inside the organization.
-These collaborators reserve the claim of contribution as stated above unless 
-negotiated otherwise.
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
